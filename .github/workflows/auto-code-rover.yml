@@ -25,11 +25,11 @@ jobs:
       - name: Checkout POC repository
         uses: actions/checkout@v4
 
-      - name: Clone auto-code-rover
+      - name: Clone auto-code-rover (with PlainTask.execute_reproducer fix)
         run: |
-          git clone https://github.com/nus-apr/auto-code-rover.git auto-code-rover
+          git clone https://github.com/0dd/auto-code-rover.git auto-code-rover
           cd auto-code-rover
-          echo "Auto-code-rover cloned successfully"
+          echo "Auto-code-rover cloned successfully (fork with execute_reproducer implementation)"
           ls -la
 
       - name: Patch auto-code-rover to support Claude 3.5 Haiku
