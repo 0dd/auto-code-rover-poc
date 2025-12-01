@@ -1,0 +1,115 @@
+name: Auto Code Rover POC
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+jobs:
+  auto-code-rover:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout POC repository
+        uses: actions/checkout@v4
+
+      - name: Clone auto-code-rover
+        run: |
+          git clone https://github.com/nus-apr/auto-code-rover.git /tmp/auto-code-rover
+          cd /tmp/auto-code-rover
+          echo "Auto-code-rover cloned successfully"
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: /tmp/auto-code-rover/environment.yml
+          activate-environment: auto-code-rover
+          python-version: 3.12
+          auto-update-conda: false
+          auto-activate-base: false
+
+      - name: Verify conda environment
+        run: |
+          conda info
+          conda list
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=/tmp/auto-code-rover" >> $GITHUB_ENV
+
+      - name: Display environment for debugging
+        run: |
+          echo "=== Environment Variables ==="
+          echo "ANTHROPIC_API_KEY is set: ${{ secrets.ANTHROPIC_API_KEY != '' }}"
+          echo "OPENAI_KEY is set: ${{ secrets.OPENAI_KEY != '' }}"
+          echo "Issue Number: ${{ github.event.issue.number }}"
+          echo "Issue URL: ${{ github.event.issue.html_url }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Clone URL: ${{ github.event.repository.clone_url }}"
+          echo "SHA: ${{ github.sha }}"
+
+      - name: Run auto-code-rover on issue
+        run: |
+          cd /tmp/auto-code-rover
+
+          # Use Anthropic API if available, otherwise OpenAI
+          MODEL="gpt-4o-2024-05-13"
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            MODEL="claude-3-5-sonnet-20241022"
+          fi
+
+          echo "Using model: $MODEL"
+
+          # Run auto-code-rover
+          python app/main.py github-issue \
+            --output-dir output \
+            --setup-dir setup \
+            --model "$MODEL" \
+            --model-temperature 0.2 \
+            --task-id "issue-${{ github.event.issue.number }}" \
+            --clone-link "${{ github.event.repository.clone_url }}" \
+            --commit-hash "${{ github.sha }}" \
+            --issue-link "${{ github.event.issue.html_url }}"
+
+      - name: Upload output artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-code-rover-output-${{ github.event.issue.number }}
+          path: /tmp/auto-code-rover/output/
+          retention-days: 7
+
+      - name: Upload setup artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-code-rover-setup-${{ github.event.issue.number }}
+          path: /tmp/auto-code-rover/setup/
+          retention-days: 7
+
+      - name: Comment results on issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            let comment = '## Auto-Code-Rover Execution Completed\n\n';
+            comment += `- Task ID: issue-${{ github.event.issue.number }}\n`;
+            comment += `- Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n`;
+            comment += '\nCheck the workflow artifacts for detailed output.';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
