@@ -62,7 +62,7 @@ jobs:
           # Use Anthropic API if available, otherwise OpenAI
           MODEL="gpt-4o-2024-05-13"
           if [ -n "$ANTHROPIC_API_KEY" ]; then
-            MODEL="claude-3-5-sonnet-20241022"
+            MODEL="claude-3-5-haiku-20241022"
           fi
 
           echo "Using model: $MODEL"
