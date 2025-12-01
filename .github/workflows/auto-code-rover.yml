@@ -32,6 +32,32 @@ jobs:
           echo "Auto-code-rover cloned successfully"
           ls -la
 
+      - name: Patch auto-code-rover to support Claude 3.5 Haiku
+        run: |
+          cd auto-code-rover
+
+          # Add Claude3_5Haiku class to claude.py
+          cat >> app/model/claude.py << 'EOF'
+
+class Claude3_5Haiku(AnthropicModel):
+    def __init__(self):
+        super().__init__(
+            "claude-3-5-haiku-20241022", 0.0000008, 0.000004, parallel_tool_call=True
+        )
+        self.note = "Fastest and most cost-effective model from Anthropic"
+EOF
+
+          # Register the new model in register.py (add after Claude3_5SonnetNew)
+          sed -i 's/common\.register_model(claude\.Claude3_5SonnetNew())/&\n    common.register_model(claude.Claude3_5Haiku())/' app/model/register.py
+
+          echo "✅ Patched auto-code-rover to support claude-3-5-haiku-20241022"
+
+          # Verify the patch
+          echo "--- Verifying claude.py ---"
+          tail -10 app/model/claude.py
+          echo "--- Verifying register.py ---"
+          grep "Claude3_5" app/model/register.py || echo "Pattern not found"
+
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
