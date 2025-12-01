@@ -37,18 +37,7 @@ jobs:
           cd auto-code-rover
 
           # Add Claude3_5Haiku class to claude.py
-          python3 << 'PYTHON_SCRIPT'
-          with open('app/model/claude.py', 'a') as f:
-              f.write('''
-
-class Claude3_5Haiku(AnthropicModel):
-    def __init__(self):
-        super().__init__(
-            "claude-3-5-haiku-20241022", 0.0000008, 0.000004, parallel_tool_call=True
-        )
-        self.note = "Fastest and most cost-effective model from Anthropic"
-''')
-          PYTHON_SCRIPT
+          printf '\n\nclass Claude3_5Haiku(AnthropicModel):\n    def __init__(self):\n        super().__init__(\n            "claude-3-5-haiku-20241022", 0.0000008, 0.000004, parallel_tool_call=True\n        )\n        self.note = "Fastest and most cost-effective model from Anthropic"\n' >> app/model/claude.py
 
           # Register the new model in register.py (add after Claude3_5SonnetNew)
           sed -i 's/common\.register_model(claude\.Claude3_5SonnetNew())/&\n    common.register_model(claude.Claude3_5Haiku())/' app/model/register.py
