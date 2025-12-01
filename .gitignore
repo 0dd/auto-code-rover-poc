@@ -1,0 +1,28 @@
+# Documentation (不commit到git)
+*.md
+
+# Auto-code-rover artifacts
+auto-code-rover/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

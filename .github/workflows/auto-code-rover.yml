@@ -6,6 +6,10 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   auto-code-rover:
     runs-on: ubuntu-latest
@@ -23,14 +27,15 @@ jobs:
 
       - name: Clone auto-code-rover
         run: |
-          git clone https://github.com/nus-apr/auto-code-rover.git /tmp/auto-code-rover
-          cd /tmp/auto-code-rover
+          git clone https://github.com/nus-apr/auto-code-rover.git auto-code-rover
+          cd auto-code-rover
           echo "Auto-code-rover cloned successfully"
+          ls -la
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: /tmp/auto-code-rover/environment.yml
+          environment-file: auto-code-rover/environment.yml
           activate-environment: auto-code-rover
           python-version: 3.12
           auto-update-conda: false
@@ -42,7 +47,7 @@ jobs:
           conda list
 
       - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=/tmp/auto-code-rover" >> $GITHUB_ENV
+        run: echo "PYTHONPATH=$GITHUB_WORKSPACE/auto-code-rover" >> $GITHUB_ENV
 
       - name: Display environment for debugging
         run: |
@@ -54,10 +59,12 @@ jobs:
           echo "Repository: ${{ github.repository }}"
           echo "Clone URL: ${{ github.event.repository.clone_url }}"
           echo "SHA: ${{ github.sha }}"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          ls -la $GITHUB_WORKSPACE
 
       - name: Run auto-code-rover on issue
         run: |
-          cd /tmp/auto-code-rover
+          cd auto-code-rover
 
           # Use Anthropic API if available, otherwise OpenAI
           MODEL="gpt-4o-2024-05-13"
@@ -83,7 +90,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: auto-code-rover-output-${{ github.event.issue.number }}
-          path: /tmp/auto-code-rover/output/
+          path: auto-code-rover/output/
           retention-days: 7
 
       - name: Upload setup artifacts
@@ -91,7 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: auto-code-rover-setup-${{ github.event.issue.number }}
-          path: /tmp/auto-code-rover/setup/
+          path: auto-code-rover/setup/
           retention-days: 7
 
       - name: Comment results on issue
